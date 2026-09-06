@@ -6,7 +6,6 @@ struct PersonalCenterView: View {
     @EnvironmentObject private var store: LedgerStore
     @State private var exportDocument: LedgerBackupDocument?
     @State private var showingExporter = false
-    @State private var pendingBackup: LedgerBackup?
     @State private var presentedSheet: PersonalSheet?
     @State private var showingDeleteConfirmation = false
     @State private var message: StatusMessage?
@@ -48,14 +47,12 @@ struct PersonalCenterView: View {
                         readImportResult(result)
                     }
                 }
-            case .importConfirmation:
-                if let pendingBackup {
-                    ImportBackupSheet(backup: pendingBackup) {
-                        confirmImport()
-                    }
-                    .presentationDetents([.height(300)])
-                    .presentationDragIndicator(.visible)
+            case .importConfirmation(let backup):
+                ImportBackupSheet(backup: backup) {
+                    confirmImport(backup)
                 }
+                .presentationDetents([.height(300)])
+                .presentationDragIndicator(.visible)
             }
         }
         .confirmationDialog(
@@ -187,22 +184,20 @@ struct PersonalCenterView: View {
             let data = try Data(contentsOf: url)
             let decoder = JSONDecoder()
             decoder.dateDecodingStrategy = .iso8601
-            pendingBackup = try decoder.decode(LedgerBackup.self, from: data)
-            presentedSheet = .importConfirmation
+            let backup = try decoder.decode(LedgerBackup.self, from: data)
+            presentedSheet = .importConfirmation(backup)
         } catch {
             message = StatusMessage(title: "无法导入", detail: error.localizedDescription)
         }
     }
 
-    private func confirmImport() {
-        guard let pendingBackup else { return }
+    private func confirmImport(_ backup: LedgerBackup) {
         do {
-            try store.importBackup(pendingBackup)
-            message = StatusMessage(title: "恢复成功", detail: "已恢复 \(pendingBackup.transactions.count) 笔账单。")
+            try store.importBackup(backup)
+            message = StatusMessage(title: "恢复成功", detail: "已恢复 \(backup.transactions.count) 笔账单。")
         } catch {
             message = StatusMessage(title: "无法导入", detail: error.localizedDescription)
         }
-        self.pendingBackup = nil
         presentedSheet = nil
     }
 
@@ -215,12 +210,13 @@ struct PersonalCenterView: View {
 
 private enum PersonalSheet: Identifiable {
     case documentPicker
-    case importConfirmation
+    case importConfirmation(LedgerBackup)
 
     var id: String {
         switch self {
         case .documentPicker: return "document-picker"
-        case .importConfirmation: return "import-confirmation"
+        case .importConfirmation(let backup):
+            return "import-confirmation-" + String(backup.exportedAt.timeIntervalSince1970)
         }
     }
 }
