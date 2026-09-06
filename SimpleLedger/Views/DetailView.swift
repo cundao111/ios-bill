@@ -6,6 +6,8 @@ struct DetailView: View {
     @State private var filter: TransactionKind?
     @State private var showingMonthPicker = false
     @State private var editingTransaction: LedgerTransaction?
+    @State private var pendingDeletion: LedgerTransaction?
+    @State private var showingDeleteConfirmation = false
     private let calendar = Calendar.current
 
     private var interval: DateInterval { calendar.monthInterval(containing: selectedMonth) }
@@ -52,6 +54,23 @@ struct DetailView: View {
                 TransactionEntryView(transaction: item)
                     .presentationDetents([.large])
                     .presentationDragIndicator(.visible)
+            }
+            .confirmationDialog(
+                "确定删除这笔账单？",
+                isPresented: $showingDeleteConfirmation,
+                titleVisibility: .visible
+            ) {
+                Button("删除", role: .destructive) {
+                    if let pendingDeletion {
+                        store.deleteTransaction(id: pendingDeletion.id)
+                    }
+                    self.pendingDeletion = nil
+                }
+                Button("取消", role: .cancel) {
+                    pendingDeletion = nil
+                }
+            } message: {
+                Text("删除后无法撤销。")
             }
         }
     }
@@ -127,11 +146,10 @@ struct DetailView: View {
                         .onTapGesture {
                             editingTransaction = item
                         }
-                        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-                            Button(role: .destructive) {
-                                store.deleteTransaction(id: item.id)
-                            } label: {
-                                Label("删除", systemImage: "trash")
+                        .contextMenu {
+                            Button("删除", role: .destructive) {
+                                pendingDeletion = item
+                                showingDeleteConfirmation = true
                             }
                         }
                     if index < items.count - 1 { Divider().padding(.leading, 68) }

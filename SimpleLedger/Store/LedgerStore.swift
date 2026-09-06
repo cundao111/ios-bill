@@ -38,6 +38,29 @@ final class LedgerStore: ObservableObject {
         return category
     }
 
+    @discardableResult
+    func updateCategory(id: UUID, name: String) -> Bool {
+        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty,
+              let index = categories.firstIndex(where: { $0.id == id && $0.isCustom }) else { return false }
+        let kind = categories[index].kind
+        guard !categories.contains(where: { $0.id != id && $0.kind == kind && $0.name.caseInsensitiveCompare(trimmed) == .orderedSame }) else {
+            return false
+        }
+        categories[index].name = trimmed
+        saveCategories()
+        return true
+    }
+
+    @discardableResult
+    func deleteCategory(id: UUID) -> Bool {
+        guard let category = categories.first(where: { $0.id == id && $0.isCustom }) else { return false }
+        guard !transactions.contains(where: { $0.categoryID == category.id }) else { return false }
+        categories.removeAll { $0.id == id }
+        saveCategories()
+        return true
+    }
+
     func addTransaction(kind: TransactionKind, amount: Double, categoryID: UUID, note: String, date: Date) {
         guard amount > 0 else { return }
         let item = LedgerTransaction(kind: kind, amount: amount, categoryID: categoryID, note: note.trimmingCharacters(in: .whitespacesAndNewlines), date: date)
