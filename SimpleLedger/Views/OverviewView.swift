@@ -59,7 +59,8 @@ struct OverviewView: View {
                     .background(.background, in: RoundedRectangle(cornerRadius: 20))
                 }
                 .padding(.horizontal, 16)
-                .padding(.bottom, 20)
+                // Keep the last category card above the custom bottom navigation bar.
+                .padding(.bottom, 100)
             }
             .background(Color.appBackground)
             .navigationTitle("总览")

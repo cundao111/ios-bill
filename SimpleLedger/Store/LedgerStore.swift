@@ -45,6 +45,17 @@ final class LedgerStore: ObservableObject {
         saveTransactions()
     }
 
+    func updateTransaction(id: UUID, kind: TransactionKind, amount: Double, categoryID: UUID, note: String, date: Date) {
+        guard amount > 0, let index = transactions.firstIndex(where: { $0.id == id }) else { return }
+        transactions[index] = LedgerTransaction(id: id, kind: kind, amount: amount, categoryID: categoryID, note: note.trimmingCharacters(in: .whitespacesAndNewlines), date: date)
+        saveTransactions()
+    }
+
+    func deleteTransaction(id: UUID) {
+        transactions.removeAll { $0.id == id }
+        saveTransactions()
+    }
+
     func deleteTransactions(at offsets: IndexSet, from displayedItems: [LedgerTransaction]) {
         let ids = Set(offsets.compactMap { displayedItems.indices.contains($0) ? displayedItems[$0].id : nil })
         transactions.removeAll { ids.contains($0.id) }

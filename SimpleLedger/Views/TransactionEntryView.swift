@@ -1,4 +1,5 @@
 import SwiftUI
+import Foundation
 
 struct TransactionEntryView: View {
     @EnvironmentObject private var store: LedgerStore
@@ -11,6 +12,18 @@ struct TransactionEntryView: View {
     @State private var showingNewCategory = false
     @State private var newCategoryName = ""
     @FocusState private var amountFocused: Bool
+    private let editingTransaction: LedgerTransaction?
+
+    init(transaction: LedgerTransaction? = nil) {
+        editingTransaction = transaction
+        _kind = State(initialValue: transaction?.kind ?? .expense)
+        _amountText = State(initialValue: transaction.map { amount in
+            amount.amount.rounded() == amount.amount ? String(format: "%.0f", amount.amount) : String(format: "%.2f", amount.amount)
+        } ?? "")
+        _note = State(initialValue: transaction?.note ?? "")
+        _date = State(initialValue: transaction?.date ?? Date())
+        _selectedCategoryID = State(initialValue: transaction?.categoryID)
+    }
 
     private var amount: Double? {
         Double(amountText.replacingOccurrences(of: ",", with: "."))
@@ -99,10 +112,14 @@ struct TransactionEntryView: View {
 
                     Button {
                         guard let amount, let selectedCategoryID else { return }
-                        store.addTransaction(kind: kind, amount: amount, categoryID: selectedCategoryID, note: note, date: date)
+                        if let editingTransaction {
+                            store.updateTransaction(id: editingTransaction.id, kind: kind, amount: amount, categoryID: selectedCategoryID, note: note, date: date)
+                        } else {
+                            store.addTransaction(kind: kind, amount: amount, categoryID: selectedCategoryID, note: note, date: date)
+                        }
                         dismiss()
                     } label: {
-                        Text("完成")
+                        Text(editingTransaction == nil ? "完成" : "保存修改")
                             .font(.headline)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 16)
@@ -114,7 +131,7 @@ struct TransactionEntryView: View {
                 .padding(20)
             }
             .background(Color.appBackground)
-            .navigationTitle("记一笔")
+            .navigationTitle(editingTransaction == nil ? "记一笔" : "编辑账单")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -122,10 +139,15 @@ struct TransactionEntryView: View {
                 }
             }
             .onAppear {
-                selectFirstCategory()
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { amountFocused = true }
+                if selectedCategoryID == nil { selectFirstCategory() }
+                if editingTransaction == nil {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { amountFocused = true }
+                }
             }
-            .onChange(of: kind) { _ in selectFirstCategory() }
+            .onChange(of: kind) { _ in
+                selectedCategoryID = nil
+                selectFirstCategory()
+            }
             .alert("新增\(kind.rawValue)分类", isPresented: $showingNewCategory) {
                 TextField("分类名称", text: $newCategoryName)
                 Button("取消", role: .cancel) { newCategoryName = "" }

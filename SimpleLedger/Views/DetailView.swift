@@ -5,6 +5,7 @@ struct DetailView: View {
     @State private var selectedMonth = Date()
     @State private var filter: TransactionKind?
     @State private var showingMonthPicker = false
+    @State private var editingTransaction: LedgerTransaction?
     private let calendar = Calendar.current
 
     private var interval: DateInterval { calendar.monthInterval(containing: selectedMonth) }
@@ -45,6 +46,11 @@ struct DetailView: View {
             .sheet(isPresented: $showingMonthPicker) {
                 MonthPickerView(selection: $selectedMonth)
                     .presentationDetents([.height(330)])
+                    .presentationDragIndicator(.visible)
+            }
+            .sheet(item: $editingTransaction) { item in
+                TransactionEntryView(transaction: item)
+                    .presentationDetents([.large])
                     .presentationDragIndicator(.visible)
             }
         }
@@ -117,9 +123,15 @@ struct DetailView: View {
             VStack(spacing: 0) {
                 ForEach(Array(items.enumerated()), id: \.element.id) { index, item in
                     TransactionRow(item: item, category: store.category(for: item.categoryID))
-                        .contextMenu {
-                            Button("删除", role: .destructive) {
-                                store.deleteTransactions(at: IndexSet(integer: index), from: items)
+                        .contentShape(Rectangle())
+                        .onTapGesture {
+                            editingTransaction = item
+                        }
+                        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                            Button(role: .destructive) {
+                                store.deleteTransaction(id: item.id)
+                            } label: {
+                                Label("删除", systemImage: "trash")
                             }
                         }
                     if index < items.count - 1 { Divider().padding(.leading, 68) }
