@@ -17,6 +17,7 @@
 		A10000000000000000000009 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000009 /* Assets.xcassets */; };
 		A1000000000000000000000A /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = B1000000000000000000000A /* LaunchScreen.storyboard */; };
 		A1000000000000000000000C /* PersonalCenterView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000000000000000000000C /* PersonalCenterView.swift */; };
+		A1000000000000000000000D /* CategoryManagementView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000000000000000000000D /* CategoryManagementView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -32,6 +33,7 @@
 		B1000000000000000000000A /* LaunchScreen.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = LaunchScreen.storyboard; sourceTree = "<group>"; };
 		B1000000000000000000000B /* SimpleLedger.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SimpleLedger.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		B1000000000000000000000C /* PersonalCenterView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersonalCenterView.swift; sourceTree = "<group>"; };
+		B1000000000000000000000D /* CategoryManagementView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CategoryManagementView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -69,7 +71,7 @@
 		D10000000000000000000004 /* Models */ = {isa = PBXGroup; children = (B10000000000000000000002,); path = Models; sourceTree = "<group>"; };
 		D10000000000000000000005 /* Store */ = {isa = PBXGroup; children = (B10000000000000000000003,); path = Store; sourceTree = "<group>"; };
 		D10000000000000000000006 /* Utilities */ = {isa = PBXGroup; children = (B10000000000000000000004,); path = Utilities; sourceTree = "<group>"; };
-		D10000000000000000000007 /* Views */ = {isa = PBXGroup; children = (B10000000000000000000005,B10000000000000000000006,B10000000000000000000007,B10000000000000000000008,B1000000000000000000000C,); path = Views; sourceTree = "<group>"; };
+		D10000000000000000000007 /* Views */ = {isa = PBXGroup; children = (B10000000000000000000005,B10000000000000000000006,B10000000000000000000007,B10000000000000000000008,B1000000000000000000000C,B1000000000000000000000D,); path = Views; sourceTree = "<group>"; };
 		D10000000000000000000008 /* Products */ = {isa = PBXGroup; children = (B1000000000000000000000B,); name = Products; sourceTree = "<group>"; };
 		D10000000000000000000009 /* Resources */ = {isa = PBXGroup; children = (B10000000000000000000009,B1000000000000000000000A,); path = Resources; sourceTree = "<group>"; };
 /* End PBXGroup section */
@@ -110,7 +112,7 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
-		C10000000000000000000002 /* Sources */ = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (A10000000000000000000001,A10000000000000000000002,A10000000000000000000003,A10000000000000000000004,A10000000000000000000005,A10000000000000000000006,A10000000000000000000007,A10000000000000000000008,A1000000000000000000000C,); runOnlyForDeploymentPostprocessing = 0; };
+		C10000000000000000000002 /* Sources */ = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (A10000000000000000000001,A10000000000000000000002,A10000000000000000000003,A10000000000000000000004,A10000000000000000000005,A10000000000000000000006,A10000000000000000000007,A10000000000000000000008,A1000000000000000000000C,A1000000000000000000000D,); runOnlyForDeploymentPostprocessing = 0; };
 /* End PBXSourcesBuildPhase section */
 
 /* Begin XCBuildConfiguration section */

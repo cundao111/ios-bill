@@ -10,18 +10,12 @@ struct PersonalCenterView: View {
     @State private var showingImportConfirmation = false
     @State private var showingDeleteConfirmation = false
     @State private var message: StatusMessage?
-    @State private var categoryKind: TransactionKind = .expense
-    @State private var editingCategory: LedgerCategory?
-    @State private var editingCategoryName = ""
-    @State private var pendingCategoryDeletion: LedgerCategory?
-    @State private var showingCategoryDeleteConfirmation = false
 
     var body: some View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 20) {
                     accountCard
-                    categorySection
                     dataSection
                     safetyNote
                 }
@@ -48,16 +42,15 @@ struct PersonalCenterView: View {
         .fileImporter(isPresented: $showingImporter, allowedContentTypes: [.json]) { result in
             readImportResult(result)
         }
-        .confirmationDialog(
-            "导入后将覆盖当前全部账单和分类",
-            isPresented: $showingImportConfirmation,
-            titleVisibility: .visible
-        ) {
-            Button("覆盖并导入", role: .destructive) { confirmImport() }
-            Button("取消", role: .cancel) { pendingBackup = nil }
-        } message: {
+        .sheet(isPresented: $showingImportConfirmation, onDismiss: {
+            pendingBackup = nil
+        }) {
             if let pendingBackup {
-                Text("备份包含 \(pendingBackup.transactions.count) 笔账单。建议先导出当前数据。")
+                ImportBackupSheet(backup: pendingBackup) {
+                    confirmImport()
+                }
+                .presentationDetents([.height(300)])
+                .presentationDragIndicator(.visible)
             }
         }
         .confirmationDialog(
@@ -72,38 +65,6 @@ struct PersonalCenterView: View {
             Button("取消", role: .cancel) { }
         } message: {
             Text("此操作无法撤销，建议删除前先导出备份。")
-        }
-        .confirmationDialog(
-            "确定删除分类“\(pendingCategoryDeletion?.name ?? "")”？",
-            isPresented: $showingCategoryDeleteConfirmation,
-            titleVisibility: .visible
-        ) {
-            Button("删除分类", role: .destructive) {
-                guard let category = pendingCategoryDeletion else { return }
-                if !store.deleteCategory(id: category.id) {
-                    message = StatusMessage(title: "无法删除", detail: "该分类已被账单使用，请先修改关联账单的分类。")
-                }
-                pendingCategoryDeletion = nil
-            }
-            Button("取消", role: .cancel) { pendingCategoryDeletion = nil }
-        } message: {
-            Text("只有未被账单使用的分类可以删除。")
-        }
-        .alert("修改分类名称", isPresented: Binding(
-            get: { editingCategory != nil },
-            set: { if !$0 { editingCategory = nil } }
-        )) {
-            TextField("分类名称", text: $editingCategoryName)
-            Button("取消", role: .cancel) { editingCategory = nil }
-            Button("保存") {
-                guard let category = editingCategory else { return }
-                if !store.updateCategory(id: category.id, name: editingCategoryName) {
-                    message = StatusMessage(title: "无法修改", detail: "名称不能为空，且不能与同类分类重复。")
-                }
-                editingCategory = nil
-            }
-        } message: {
-            Text("修改后，历史账单中的分类名称也会同步更新。")
         }
         .alert(item: $message) { message in
             Alert(title: Text(message.title), message: Text(message.detail), dismissButton: .default(Text("知道了")))
@@ -167,66 +128,6 @@ struct PersonalCenterView: View {
                 color: .expenseCoral
             ) {
                 showingDeleteConfirmation = true
-            }
-        }
-        .background(.background, in: RoundedRectangle(cornerRadius: 20))
-    }
-
-    private var categorySection: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            HStack {
-                Text("分类管理")
-                    .font(.headline)
-                Spacer()
-                Picker("分类类型", selection: $categoryKind) {
-                    ForEach(TransactionKind.allCases) { Text($0.rawValue).tag($0) }
-                }
-                .pickerStyle(.segmented)
-                .frame(width: 132)
-            }
-            .padding(.horizontal, 18)
-            .padding(.vertical, 14)
-
-            Divider().padding(.leading, 18)
-
-            let items = store.categories(for: categoryKind)
-            if items.isEmpty {
-                HStack {
-                    Image(systemName: "square.grid.2x2")
-                        .foregroundStyle(.secondary)
-                    Text("还没有(categoryKind.rawValue)分类，请在记账时新增")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                    Spacer()
-                }
-                .padding(18)
-            } else {
-                ForEach(items) { category in
-                    HStack(spacing: 12) {
-                        Image(systemName: category.symbol)
-                            .foregroundStyle(categoryKind.color)
-                            .frame(width: 34, height: 34)
-                            .background(categoryKind.color.opacity(0.11), in: Circle())
-                        Text(category.name)
-                            .font(.body.weight(.medium))
-                        Spacer()
-                        Button("修改") {
-                            editingCategory = category
-                            editingCategoryName = category.name
-                        }
-                        .font(.subheadline)
-                        Button(role: .destructive) {
-                            pendingCategoryDeletion = category
-                            showingCategoryDeleteConfirmation = true
-                        } label: {
-                            Image(systemName: "trash")
-                        }
-                        .buttonStyle(.borderless)
-                    }
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 10)
-                    if category.id != items.last?.id { Divider().padding(.leading, 62) }
-                }
             }
         }
         .background(.background, in: RoundedRectangle(cornerRadius: 20))
@@ -297,6 +198,7 @@ struct PersonalCenterView: View {
             message = StatusMessage(title: "无法导入", detail: error.localizedDescription)
         }
         self.pendingBackup = nil
+        showingImportConfirmation = false
     }
 
     private var customCategoryCount: Int { store.categories.filter(\.isCustom).count }
@@ -334,5 +236,38 @@ struct LedgerBackupDocument: FileDocument {
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
         encoder.dateEncodingStrategy = .iso8601
         return FileWrapper(regularFileWithContents: try encoder.encode(backup))
+    }
+}
+
+private struct ImportBackupSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    let backup: LedgerBackup
+    let onConfirm: () -> Void
+
+    var body: some View {
+        VStack(spacing: 18) {
+            Image(systemName: "arrow.down.doc.fill")
+                .font(.system(size: 34))
+                .foregroundStyle(Color.incomeGreen)
+            Text("确认导入备份？")
+                .font(.title3.weight(.bold))
+            Text("此备份包含 \(backup.transactions.count) 笔账单和 \(backup.categories.filter(\.isCustom).count) 个自定义分类。导入后会覆盖当前本地数据。")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 18)
+            HStack(spacing: 12) {
+                Button("取消") { dismiss() }
+                    .buttonStyle(.bordered)
+                    .frame(maxWidth: .infinity)
+                Button("覆盖并导入") {
+                    onConfirm()
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(Color.brandBlue)
+                .frame(maxWidth: .infinity)
+            }
+        }
+        .padding(22)
     }
 }

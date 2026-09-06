@@ -7,8 +7,9 @@ struct RootTabView: View {
     var body: some View {
         Group {
             switch selection {
-            case 2: OverviewView()
-            case 3: PersonalCenterView()
+            case 1: CategoryManagementView()
+            case 3: OverviewView()
+            case 4: PersonalCenterView()
             default: DetailView()
             }
         }
@@ -31,6 +32,8 @@ private struct LedgerTabBar: View {
         HStack(spacing: 0) {
             tabButton(title: "明细", symbol: "list.bullet.rectangle", value: 0)
 
+            tabButton(title: "分类管理", symbol: "square.grid.2x2", value: 1)
+
             Button { showingEntry = true } label: {
                 VStack(spacing: 3) {
                     Image(systemName: "plus")
@@ -48,8 +51,8 @@ private struct LedgerTabBar: View {
             .accessibilityLabel("记一笔")
             .frame(maxWidth: .infinity)
 
-            tabButton(title: "总览", symbol: "chart.bar.fill", value: 2)
-            tabButton(title: "我的", symbol: "person.crop.circle", value: 3)
+            tabButton(title: "总览", symbol: "chart.bar.fill", value: 3)
+            tabButton(title: "我的", symbol: "person.crop.circle", value: 4)
         }
         .padding(.top, 8)
         .padding(.bottom, 4)
