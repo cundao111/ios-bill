@@ -57,3 +57,22 @@ struct CategoryTotal: Identifiable {
     let fraction: Double
     var id: UUID { category.id }
 }
+
+struct LedgerBackup: Codable {
+    let version: Int
+    let exportedAt: Date
+    let categories: [LedgerCategory]
+    let transactions: [LedgerTransaction]
+}
+
+enum LedgerBackupError: LocalizedError {
+    case unsupportedVersion
+    case invalidData
+
+    var errorDescription: String? {
+        switch self {
+        case .unsupportedVersion: return "备份版本不受支持"
+        case .invalidData: return "备份内容不完整或已损坏"
+        }
+    }
+}

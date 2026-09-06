@@ -18,7 +18,7 @@ final class LedgerStore: ObservableObject {
     }
 
     func categories(for kind: TransactionKind) -> [LedgerCategory] {
-        categories.filter { $0.kind == kind }
+        categories.filter { $0.kind == kind && $0.isCustom }
     }
 
     func category(for id: UUID) -> LedgerCategory? {
@@ -74,12 +74,46 @@ final class LedgerStore: ObservableObject {
             .sorted { $0.amount > $1.amount }
     }
 
+    func makeBackup() -> LedgerBackup {
+        LedgerBackup(
+            version: 1,
+            exportedAt: Date(),
+            categories: categories,
+            transactions: transactions
+        )
+    }
+
+    func importBackup(_ backup: LedgerBackup) throws {
+        guard backup.version == 1 else { throw LedgerBackupError.unsupportedVersion }
+        let importedCategories = backup.categories
+        guard Set(importedCategories.map(\.id)).count == importedCategories.count else {
+            throw LedgerBackupError.invalidData
+        }
+        let categoryKinds = Dictionary(uniqueKeysWithValues: importedCategories.map { ($0.id, $0.kind) })
+        let isValid = backup.transactions.allSatisfy { item in
+            item.amount > 0 && categoryKinds[item.categoryID] == item.kind
+        }
+        guard isValid else { throw LedgerBackupError.invalidData }
+
+        categories = importedCategories
+        transactions = backup.transactions
+        saveCategories()
+        saveTransactions()
+    }
+
+    func deleteAllLocalData() {
+        transactions = []
+        categories = []
+        saveTransactions()
+        saveCategories()
+    }
+
     private func load() {
         if let data = defaults.data(forKey: categoriesKey),
            let decoded = try? decoder.decode([LedgerCategory].self, from: data) {
             categories = decoded
         } else {
-            categories = Self.defaultCategories
+            categories = []
             saveCategories()
         }
 
@@ -99,19 +133,4 @@ final class LedgerStore: ObservableObject {
         defaults.set(data, forKey: categoriesKey)
     }
 
-    static let defaultCategories: [LedgerCategory] = [
-        LedgerCategory(name: "餐饮", symbol: "fork.knife", kind: .expense),
-        LedgerCategory(name: "交通", symbol: "car.fill", kind: .expense),
-        LedgerCategory(name: "购物", symbol: "bag.fill", kind: .expense),
-        LedgerCategory(name: "居住", symbol: "house.fill", kind: .expense),
-        LedgerCategory(name: "娱乐", symbol: "gamecontroller.fill", kind: .expense),
-        LedgerCategory(name: "医疗", symbol: "cross.case.fill", kind: .expense),
-        LedgerCategory(name: "学习", symbol: "book.fill", kind: .expense),
-        LedgerCategory(name: "其他", symbol: "ellipsis", kind: .expense),
-        LedgerCategory(name: "工资", symbol: "banknote.fill", kind: .income),
-        LedgerCategory(name: "奖金", symbol: "gift.fill", kind: .income),
-        LedgerCategory(name: "理财", symbol: "chart.line.uptrend.xyaxis", kind: .income),
-        LedgerCategory(name: "兼职", symbol: "briefcase.fill", kind: .income),
-        LedgerCategory(name: "其他", symbol: "ellipsis", kind: .income)
-    ]
 }

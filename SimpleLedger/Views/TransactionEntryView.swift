@@ -58,10 +58,26 @@ struct TransactionEntryView: View {
                                 .font(.subheadline)
                         }
 
-                        LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12), count: 4), spacing: 16) {
-                            ForEach(store.categories(for: kind)) { category in
-                                CategoryChoice(category: category, isSelected: selectedCategoryID == category.id, color: kind.color) {
-                                    selectedCategoryID = category.id
+                        if store.categories(for: kind).isEmpty {
+                            Button { showingNewCategory = true } label: {
+                                VStack(spacing: 10) {
+                                    Image(systemName: "folder.badge.plus")
+                                        .font(.system(size: 28, weight: .light))
+                                    Text("还没有\(kind.rawValue)分类，点击新增")
+                                        .font(.subheadline)
+                                }
+                                .foregroundStyle(kind.color)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 24)
+                                .background(kind.color.opacity(0.07), in: RoundedRectangle(cornerRadius: 16))
+                            }
+                            .buttonStyle(.plain)
+                        } else {
+                            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12), count: 4), spacing: 16) {
+                                ForEach(store.categories(for: kind)) { category in
+                                    CategoryChoice(category: category, isSelected: selectedCategoryID == category.id, color: kind.color) {
+                                        selectedCategoryID = category.id
+                                    }
                                 }
                             }
                         }

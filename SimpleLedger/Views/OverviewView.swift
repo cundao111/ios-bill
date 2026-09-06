@@ -59,7 +59,7 @@ struct OverviewView: View {
                     .background(.background, in: RoundedRectangle(cornerRadius: 20))
                 }
                 .padding(.horizontal, 16)
-                .padding(.bottom, 90)
+                .padding(.bottom, 20)
             }
             .background(Color.appBackground)
             .navigationTitle("总览")

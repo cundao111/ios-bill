@@ -38,7 +38,7 @@ struct DetailView: View {
                     }
                 }
                 .padding(.horizontal, 16)
-                .padding(.bottom, 90)
+                .padding(.bottom, 20)
             }
             .background(Color.appBackground)
             .navigationTitle("明细")
