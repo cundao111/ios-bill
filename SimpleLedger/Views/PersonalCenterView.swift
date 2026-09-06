@@ -41,11 +41,13 @@ struct PersonalCenterView: View {
         }
         .fileImporter(
             isPresented: $showingImporter,
-            allowedContentTypes: [.json, .data]
+            allowedContentTypes: [.item]
         ) { result in
             // 先关闭系统文件选择器，再解析安全作用域内的文件。
             showingImporter = false
-            readImportResult(result)
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+                readImportResult(result)
+            }
         }
         .sheet(isPresented: $showingImportConfirmation, onDismiss: {
             pendingBackup = nil
