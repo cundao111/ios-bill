@@ -1,0 +1,53 @@
+name: 构建未签名 IPA
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+      - master
+
+jobs:
+  build:
+    name: 编译 SimpleLedger
+    runs-on: macos-15
+
+    steps:
+      - name: 获取项目代码
+        uses: actions/checkout@v4
+
+      - name: 显示 Xcode 版本
+        run: xcodebuild -version
+
+      - name: 编译未签名 App
+        run: |
+          set -o pipefail
+          xcodebuild \
+            -project SimpleLedger.xcodeproj \
+            -scheme SimpleLedger \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath "$RUNNER_TEMP/SimpleLedgerDerivedData" \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY='' \
+            DEVELOPMENT_TEAM='' \
+            clean build
+
+      - name: 打包 IPA
+        run: |
+          APP_PATH="$RUNNER_TEMP/SimpleLedgerDerivedData/Build/Products/Release-iphoneos/SimpleLedger.app"
+          test -d "$APP_PATH"
+          mkdir -p "$RUNNER_TEMP/ipa/Payload"
+          ditto "$APP_PATH" "$RUNNER_TEMP/ipa/Payload/SimpleLedger.app"
+          cd "$RUNNER_TEMP/ipa"
+          /usr/bin/zip -qry "$GITHUB_WORKSPACE/SimpleLedger-unsigned.ipa" Payload
+
+      - name: 上传 IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: SimpleLedger-unsigned-ipa
+          path: SimpleLedger-unsigned.ipa
+          if-no-files-found: error
+          retention-days: 30
