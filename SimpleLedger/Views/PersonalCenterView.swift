@@ -1,13 +1,13 @@
 import SwiftUI
 import UniformTypeIdentifiers
+import UIKit
 
 struct PersonalCenterView: View {
     @EnvironmentObject private var store: LedgerStore
     @State private var exportDocument: LedgerBackupDocument?
     @State private var showingExporter = false
-    @State private var showingImporter = false
     @State private var pendingBackup: LedgerBackup?
-    @State private var showingImportConfirmation = false
+    @State private var presentedSheet: PersonalSheet?
     @State private var showingDeleteConfirmation = false
     @State private var message: StatusMessage?
 
@@ -39,25 +39,23 @@ struct PersonalCenterView: View {
             }
             exportDocument = nil
         }
-        .fileImporter(
-            isPresented: $showingImporter,
-            allowedContentTypes: [.item]
-        ) { result in
-            // 先关闭系统文件选择器，再解析安全作用域内的文件。
-            showingImporter = false
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
-                readImportResult(result)
-            }
-        }
-        .sheet(isPresented: $showingImportConfirmation, onDismiss: {
-            pendingBackup = nil
-        }) {
-            if let pendingBackup {
-                ImportBackupSheet(backup: pendingBackup) {
-                    confirmImport()
+        .sheet(item: $presentedSheet) { sheet in
+            switch sheet {
+            case .documentPicker:
+                BackupDocumentPicker { result in
+                    presentedSheet = nil
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+                        readImportResult(result)
+                    }
                 }
-                .presentationDetents([.height(300)])
-                .presentationDragIndicator(.visible)
+            case .importConfirmation:
+                if let pendingBackup {
+                    ImportBackupSheet(backup: pendingBackup) {
+                        confirmImport()
+                    }
+                    .presentationDetents([.height(300)])
+                    .presentationDragIndicator(.visible)
+                }
             }
         }
         .confirmationDialog(
@@ -123,7 +121,7 @@ struct PersonalCenterView: View {
                 symbol: "square.and.arrow.down",
                 color: .incomeGreen
             ) {
-                showingImporter = true
+                presentedSheet = .documentPicker
             }
 
             Divider().padding(.leading, 66)
@@ -190,7 +188,7 @@ struct PersonalCenterView: View {
             let decoder = JSONDecoder()
             decoder.dateDecodingStrategy = .iso8601
             pendingBackup = try decoder.decode(LedgerBackup.self, from: data)
-            showingImportConfirmation = true
+            presentedSheet = .importConfirmation
         } catch {
             message = StatusMessage(title: "无法导入", detail: error.localizedDescription)
         }
@@ -205,13 +203,25 @@ struct PersonalCenterView: View {
             message = StatusMessage(title: "无法导入", detail: error.localizedDescription)
         }
         self.pendingBackup = nil
-        showingImportConfirmation = false
+        presentedSheet = nil
     }
 
     private var customCategoryCount: Int { store.categories.filter(\.isCustom).count }
 
     private var backupFilename: String {
         "简账备份-" + Date().formatted(.dateTime.year().month().day())
+    }
+}
+
+private enum PersonalSheet: Identifiable {
+    case documentPicker
+    case importConfirmation
+
+    var id: String {
+        switch self {
+        case .documentPicker: return "document-picker"
+        case .importConfirmation: return "import-confirmation"
+        }
     }
 }
 
@@ -276,5 +286,43 @@ private struct ImportBackupSheet: View {
             }
         }
         .padding(22)
+    }
+}
+
+private struct BackupDocumentPicker: UIViewControllerRepresentable {
+    let completion: (Result<URL, Error>) -> Void
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(completion: completion)
+    }
+
+    func makeUIViewController(context: Context) -> UIDocumentPickerViewController {
+        let picker = UIDocumentPickerViewController(forOpeningContentTypes: [.json, .data], asCopy: true)
+        picker.delegate = context.coordinator
+        picker.allowsMultipleSelection = false
+        picker.shouldShowFileExtensions = true
+        return picker
+    }
+
+    func updateUIViewController(_ uiViewController: UIDocumentPickerViewController, context: Context) { }
+
+    final class Coordinator: NSObject, UIDocumentPickerDelegate {
+        let completion: (Result<URL, Error>) -> Void
+
+        init(completion: @escaping (Result<URL, Error>) -> Void) {
+            self.completion = completion
+        }
+
+        func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
+            guard let url = urls.first else {
+                completion(.failure(CocoaError(.fileNoSuchFile)))
+                return
+            }
+            completion(.success(url))
+        }
+
+        func documentPickerWasCancelled(_ controller: UIDocumentPickerViewController) {
+            completion(.failure(CocoaError(.userCancelled)))
+        }
     }
 }
