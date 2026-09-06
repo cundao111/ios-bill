@@ -39,8 +39,16 @@ struct PersonalCenterView: View {
             }
             exportDocument = nil
         }
-        .fileImporter(isPresented: $showingImporter, allowedContentTypes: [.json]) { result in
-            readImportResult(result)
+        .fileImporter(
+            isPresented: $showingImporter,
+            allowedContentTypes: [.json, .data],
+            allowsMultipleSelection: false
+        ) { result in
+            // 先关闭系统文件选择器，再解析安全作用域内的文件。
+            showingImporter = false
+            DispatchQueue.main.async {
+                readImportResult(result)
+            }
         }
         .sheet(isPresented: $showingImportConfirmation, onDismiss: {
             pendingBackup = nil
