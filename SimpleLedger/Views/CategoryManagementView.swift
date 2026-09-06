@@ -22,10 +22,10 @@ struct CategoryManagementView: View {
 
                     VStack(alignment: .leading, spacing: 0) {
                         HStack {
-                            Text("我的(kind.rawValue)分类")
+                            Text("我的" + kind.rawValue + "分类")
                                 .font(.headline)
                             Spacer()
-                            Text("共 (categories.count) 个")
+                            Text("共 " + String(categories.count) + " 个")
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                         }
@@ -39,7 +39,7 @@ struct CategoryManagementView: View {
                                 Image(systemName: "square.grid.2x2")
                                     .font(.system(size: 34, weight: .light))
                                     .foregroundStyle(.tertiary)
-                                Text("还没有(kind.rawValue)分类")
+                                Text("还没有" + kind.rawValue + "分类")
                                     .font(.subheadline)
                                 Text("在记账时点击“新增分类”创建")
                                     .font(.caption)
@@ -93,7 +93,7 @@ struct CategoryManagementView: View {
             .navigationTitle("分类管理")
         }
         .confirmationDialog(
-            "确定删除分类“(pendingDeletion?.name ?? "")”？",
+            deleteTitle,
             isPresented: $showingDeleteConfirmation,
             titleVisibility: .visible
         ) {
@@ -127,6 +127,10 @@ struct CategoryManagementView: View {
         .alert(item: $message) { message in
             Alert(title: Text(message.title), message: Text(message.detail), dismissButton: .default(Text("知道了")))
         }
+    }
+
+    private var deleteTitle: String {
+        "确定删除分类“" + (pendingDeletion?.name ?? "") + "”？"
     }
 }
 
