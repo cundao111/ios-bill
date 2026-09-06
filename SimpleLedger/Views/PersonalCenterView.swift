@@ -117,7 +117,7 @@ struct PersonalCenterView: View {
 
             actionRow(
                 title: "导入数据",
-                detail: "从 JSON 备份恢复",
+                detail: "选择 JSON 后点击右上角“打开”",
                 symbol: "square.and.arrow.down",
                 color: .incomeGreen
             ) {
